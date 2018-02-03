@@ -72,5 +72,5 @@ not found in the local object store.
 - Output: Raw hashes.
 
 ```sh
-caify-want < rootfs.idx | /home/tim/Code/caify/README.md
+caify-want < rootfs.idx | hexdump -e '32/1 "%02x" "\n"'
 ```
