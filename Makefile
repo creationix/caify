@@ -3,10 +3,22 @@
 CC=gcc -g -std=gnu99 -Werror \
 	-Wall -Wextra -pedantic -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition
 
-all: import export
+COMMANDS=\
+  bin/import \
+	bin/export \
+	bin/upload \
+	bin/download \
+	bin/want
 
-test: test.img test.copy.img
+all: $(COMMANDS)
+
+test: test.img bin/import bin/export
+	bin/import -v -s test.obj < $< | bin/export -s test.obj > test2.img
+	bin/import -s test.obj -i $< -o test.idx
+	bin/export -s test.obj -i test.idx -o test2.img
 	diff test.img test.copy.img
+	rm -rf test.obj/a* test.obj/b* test.obj/c* test.obj/d*
+	bin/want -s test.obj -i test.idx | hexdump -e '32/1 "%02x" "\n"'
 
 test.img:
 	rm -f .$@ && truncate -s 100M .$@
@@ -17,21 +29,30 @@ test.img:
 	sudo umount mnt; sudo rm -rf mnt
 	mv .$@ $@
 
-test.copy.img: test.img import export
-	./import -v -s test.obj < $< | tee log | ./export -s test.obj > $@
 
 clean:
-	rm -rf import export test.*
+	rm -rf bin test.*
 
 BLAKE2/ref/blake2b-ref.c:
 	git submodule update --init
 
-%: %.c shared.c shared.h BLAKE2/ref/blake2b-ref.c
+bin:
+	mkdir bin
+
+bin/%: %.c shared.c shared.h BLAKE2/ref/blake2b-ref.c bin
 	$(CC) $< shared.c -o $@
 
-install: import export
-	cp import /usr/local/bin/caify-import
-	cp export /usr/local/bin/caify-export
+install: $(COMMANDS)
+	cp bin/import /usr/local/bin/caify-import
+	cp bin/export /usr/local/bin/caify-export
+	cp bin/want /usr/local/bin/caify-upload
+	cp bin/want /usr/local/bin/caify-download
+	cp bin/want /usr/local/bin/caify-want
 
 uninstall:
-	rm -f /usr/local/bin/caify-import /usr/local/bin/caify-export
+	rm -f \
+		/usr/local/bin/caify-import \
+		/usr/local/bin/caify-export \
+		/usr/local/bin/caify-upload \
+		/usr/local/bin/caify-download \
+		/usr/local/bin/caify-want
