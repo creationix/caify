@@ -1,7 +1,0 @@
-#ifndef CAIFY_CONFIG
-#define CAIFY_CONFIG
-
-#define CAIFY_HASH_SIZE 32
-#define CAIFY_CHUNK_SIZE 4096
-
-#endif

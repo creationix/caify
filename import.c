@@ -1,24 +1,4 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <errno.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-#include "BLAKE2/ref/blake2b-ref.c"
-
-#include "config.h"
-
-#define PATH_MAX 1024
+#include "shared.c"
 
 // Main import function can also be used as library
 int caify_import(FILE* input, FILE* output, const char* objects_dir);
@@ -74,6 +54,8 @@ int main(int argc, char** argv) {
     } else if (!output) {
       output = fopen(argv[i], "w");
       if (!quiet) fprintf(stderr, "Writing to '%s'...\n", argv[i]);
+    } else if (!*objects_dir) {
+      strncpy(objects_dir, argv[i], PATH_MAX);
     } else {
       fprintf(stderr, "Unexpected argument: '%s'\n", argv[i]);
       usage = true;
@@ -120,11 +102,9 @@ int main(int argc, char** argv) {
 int caify_import(FILE* input, FILE* output, const char* objects_dir) {
 
   // Create the object store directory if it doesn't exist already.
-  if (mkdir(objects_dir, 0700)) {
-    if (errno != EEXIST) {
-      fprintf(stderr, "%s: '%s'\n", strerror(errno), objects_dir);
-      return errno;
-    }
+  if (mkdir(objects_dir, 0700) && errno != EEXIST) {
+    fprintf(stderr, "%s: '%s'\n", strerror(errno), objects_dir);
+    return errno;
   }
 
   uint8_t hash[CAIFY_HASH_SIZE];
@@ -148,12 +128,15 @@ int caify_import(FILE* input, FILE* output, const char* objects_dir) {
         continue;
       }
 
-      record_hash(output, hash, count);
+      int ret = record_hash(output, hash, count);
+      if (ret) return ret;
       count = 0;
     }
 
     // If this is the first of a locally unique hash, try to write it.
-    save_object(objects_dir, new_hash, buffer);
+    int ret = save_object(objects_dir, new_hash, buffer);
+    if (ret) return ret;
+
     memcpy(hash, new_hash, CAIFY_HASH_SIZE);
     count = 1;
   }
@@ -180,40 +163,24 @@ static int record_hash(FILE* output, uint8_t* hash, uint32_t count) {
   return 0;
 }
 
-#define toNibble(b) ((b) < 10 ? '0' + (b) : 'a' - 10 + (b))
-
 static int save_object(const char* objects_dir, uint8_t* hash, uint8_t* buffer) {
-  char group_path[PATH_MAX + 1];
-  snprintf(group_path, PATH_MAX, "%s/%02x/", objects_dir, hash[0]);
-  if (mkdir(objects_dir, 0700)) {
-    if (errno != EEXIST) {
-      fprintf(stderr, "%s: '%s'\n", strerror(errno), objects_dir);
-      return errno;
-    }
-  }
-  mkdir(group_path, 0700);
+  char dir[PATH_MAX + 1];
+  char path[PATH_MAX + 1];
+  hash_to_path(objects_dir, hash, dir, path);
 
-  char object_path[PATH_MAX + 1];
-  strncpy(object_path, group_path, PATH_MAX);
-  snprintf(object_path, PATH_MAX, "%s/", group_path);
-  int offset = strlen(group_path);
-  for (int i = 1; i < CAIFY_HASH_SIZE; i++) {
-    if (offset >= PATH_MAX) break;
-    object_path[offset++] = toNibble(hash[i] >> 4);
-    if (offset >= PATH_MAX) break;
-    object_path[offset++] = toNibble(hash[i] & 0xf);
+  if (mkdir(dir, 0700) && errno != EEXIST) {
+    fprintf(stderr, "%s: '%s'\n", strerror(errno), objects_dir);
+    return errno;
   }
-  object_path[offset++] = 0;
-
-  int fd = open(object_path, O_WRONLY | O_CREAT | O_EXCL, 0600);
+  int fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0600);
   if (fd < 0) {
     if (errno == EEXIST) return 0;
-    fprintf(stderr, "%s: '%s'\n", strerror(errno), object_path);
+    fprintf(stderr, "%s: '%s'\n", strerror(errno), path);
     return errno;
   }
   int written = write(fd, buffer, CAIFY_CHUNK_SIZE);
   if (written < 0) {
-    fprintf(stderr, "%s: '%s'\n", strerror(errno), object_path);
+    fprintf(stderr, "%s: '%s'\n", strerror(errno), path);
     return errno;
   }
   close(fd);

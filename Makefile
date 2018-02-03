@@ -1,5 +1,6 @@
-CC=musl-gcc -Os -static -Wall -std=c99
-
+CC=musl-gcc -Os -static -std=c99 -Werror \
+	-Wall -Wextra -pedantic -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition
+	
 all: import export
 
 clean:
@@ -8,5 +9,5 @@ clean:
 BLAKE2/ref/blake2b-ref.c:
 	git submodule update --init
 
-%: %.c config.h BLAKE2/ref/blake2b-ref.c
+%: %.c shared.c BLAKE2/ref/blake2b-ref.c
 	$(CC) $< -o $@
