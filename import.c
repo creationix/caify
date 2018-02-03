@@ -40,6 +40,7 @@ int main(int argc, char** argv) {
   while ((c = getopt (argc, argv, "hvqs:i:o:")) != -1) {
     switch (c) {
       case 'h':
+        fprintf(stderr, "Caify - Import filesystem image to object store and write index file\n\n");
         usage = true;
         return -1;
       case 'q':
@@ -66,13 +67,23 @@ int main(int argc, char** argv) {
     }
   }
 
-  if (optind >= argc) {
-    usage = true;
+  for (int i = optind; i < argc; i++) {
+    if (!input) {
+      input = fopen(argv[i], "r");
+      if (!quiet) fprintf(stderr, "Importing from '%s'...\n", argv[i]);
+    } else if (!output) {
+      output = fopen(argv[i], "w");
+      if (!quiet) fprintf(stderr, "Writing to '%s'...\n", argv[i]);
+    } else {
+      fprintf(stderr, "Unexpected argument: '%s'\n", argv[i]);
+      usage = true;
+    }
   }
 
   if (!input) {
     if (isatty(0)) {
       usage = true;
+      fprintf(stderr, "Cannot import from stdin TTY\n");
     } else {
       if (!quiet) fprintf(stderr, "Importing from stdin pipe...\n");
       input = stdin;
@@ -80,6 +91,7 @@ int main(int argc, char** argv) {
   }
   if (!output) {
     if (isatty(1)) {
+      fprintf(stderr, "Cannot write to stdout TTY\n");
       usage = true;
     } else {
       if (!quiet) fprintf(stderr, "Writing to stdout pipe...\n");
@@ -88,7 +100,6 @@ int main(int argc, char** argv) {
   }
 
   if (usage) {
-    fprintf(stderr, "Caify - Import filesystem image to object store and write index file\n\n");
     fprintf(stderr, "Usage: %s\n  -s path/to/objects\n  -i input.img\n  -o output.idx\n  -h\n  -q\n  -v\n", argv[0]);
     return -1;
   }
