@@ -10,13 +10,38 @@ COMMANDS=\
 
 all: $(COMMANDS)
 
-test: test.img bin/import bin/export
-	bin/import -v -s test.obj < $< | bin/export -s test.obj > test2.img
-	bin/import -s test.obj -i $< -o test.idx
-	bin/export -s test.obj -i test.idx -o test2.img
-	diff test.img test.copy.img
-	rm -rf test.obj/a* test.obj/b* test.obj/c* test.obj/d*
-	bin/want -s test.obj -i test.idx | hexdump -e '32/1 "%02x" "\n"'
+test-all: test.img bin/import bin/export bin/want
+	rm -rf test ; mkdir -p test
+	# Developer imports image into local store on dev machine.
+	bin/import test.img test/dev.idx test/dev.obj
+	# Developer uploads index to server
+	cp test/dev.idx test/server.idx
+	# Developer uploads objects to server that server is missing
+	bin/want -s test/server.obj -i test/server.idx \
+	 | bin/export -s test/dev.obj \
+	 | bin/import -s test/server.obj \
+	 | tee test/server.delta \
+	 | hexdump -e '32/1 "%02x" 1/4 " %x" "\n"'
+	# Device in field downloads index from server
+	cp test/server.idx test/client.idx
+	# Device syncs down missing objects.
+	bin/want -s test/client.obj < test/client.idx \
+	 | bin/export -s test/server.obj \
+	 | bin/import -s test/client.obj \
+	 | tee test/client.delta \
+	 | hexdump -e '32/1 "%02x" 1/4 " %x" "\n"'
+	# Device writes new image to block device
+	bin/export -s test/client.obj -i test/client.idx -o test/client.img
+	# Check images match on dev machine and client device
+	diff test.img test/client.img
+	# Simulate partial update by deleting part of client store
+	rm -rf test/client.obj/0* test/client.obj/1* test/client.obj/2*
+	# Device syncs down again
+	bin/want -s test/client.obj < test/client.idx \
+	 | bin/export -s test/server.obj \
+	 | bin/import -s test/client.obj \
+	 | tee test/client.2.delta \
+	 | hexdump -e '32/1 "%02x" 1/4 " %x" "\n"'
 
 test.img:
 	rm -f .$@ && truncate -s 100M .$@
@@ -29,7 +54,7 @@ test.img:
 
 
 clean:
-	rm -rf bin test.*
+	rm -rf bin test*
 
 BLAKE2/ref/blake2b-ref.c:
 	git submodule update --init
