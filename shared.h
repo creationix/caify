@@ -18,6 +18,6 @@ bool verbose;
 void hash_to_path(const char* objects_dir, uint8_t* hash, char* dir, char* path);
 
 typedef int (caify_fn_t)(FILE* input, FILE* output, const char* objects_dir);
-int caify_main(int argc, char** argv, caify_fn_t* action, const char* description);
+int caify_main(int argc, char** argv, caify_fn_t* action, const char* name, const char* description);
 
 #endif

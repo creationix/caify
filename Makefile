@@ -5,7 +5,7 @@ CFLAGS= -Werror \
 COMMANDS=\
   bin/import \
 	bin/export \
-	bin/want
+	bin/filter
 
 all: $(COMMANDS)
 
@@ -16,19 +16,24 @@ test-all: test.img $(COMMANDS)
 	# Developer uploads index to server
 	cp test/dev.idx test/server.idx
 	# Developer uploads objects to server that server is missing
-	bin/want -s test/server.obj -i test/server.idx \
+	bin/filter -s test/server.obj -i test/server.idx \
+	 | xxd -cols 36 -plain \
+	 | sort -u \
+	 | xxd -cols 36 -plain -revert \
 	 | bin/export -s test/dev.obj \
 	 | bin/import -s test/server.obj \
 	 | tee test/server.delta \
-	 | hexdump -e '32/1 "%02x" 1/4 " %x" "\n"'
+	 | hexdump -e '32/1 "%02x" 1/4 " %x" "\n"' \
+	 | wc -l
 	# Device in field downloads index from server
 	cp test/server.idx test/client.idx
 	# Device syncs down missing objects.
-	bin/want -s test/client.obj < test/client.idx \
+	bin/filter -s test/client.obj < test/client.idx \
 	 | bin/export -s test/server.obj \
 	 | bin/import -s test/client.obj \
 	 | tee test/client.delta \
-	 | hexdump -e '32/1 "%02x" 1/4 " %x" "\n"'
+	 | hexdump -e '32/1 "%02x" 1/4 " %x" "\n"' \
+	 | wc -l
 	# Device writes new image to block device
 	bin/export -s test/client.obj -i test/client.idx -o test/client.img
 	# Check images match on dev machine and client device
@@ -36,11 +41,12 @@ test-all: test.img $(COMMANDS)
 	# Simulate partial update by deleting part of client store
 	rm -rf test/client.obj/0* test/client.obj/1* test/client.obj/2*
 	# Device syncs down again
-	bin/want -s test/client.obj < test/client.idx \
+	bin/filter -s test/client.obj < test/client.idx \
 	 | bin/export -s test/server.obj \
 	 | bin/import -s test/client.obj \
 	 | tee test/client.2.delta \
-	 | hexdump -e '32/1 "%02x" 1/4 " %x" "\n"'
+	 | hexdump -e '32/1 "%02x" 1/4 " %x" "\n"' \
+	 | wc -l
 
 test.img:
 	rm -f .$@ && truncate -s 100M .$@
@@ -65,10 +71,10 @@ bin/%: %.c shared.c shared.h BLAKE2/ref/blake2b-ref.c
 install: $(COMMANDS)
 	cp bin/import /usr/local/bin/caify-import
 	cp bin/export /usr/local/bin/caify-export
-	cp bin/want /usr/local/bin/caify-want
+	cp bin/filter /usr/local/bin/caify-filter
 
 uninstall:
 	rm -f \
 		/usr/local/bin/caify-import \
 		/usr/local/bin/caify-export \
-		/usr/local/bin/caify-want
+		/usr/local/bin/caify-filter

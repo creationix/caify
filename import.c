@@ -99,5 +99,5 @@ static int caify_import(FILE* input, FILE* output, const char* objects_dir) {
 
 int main(int argc, char** argv) {
   return caify_main(argc, argv, caify_import,
-    "Import filesystem image into object store and write index file.");
+    "\033[1;32mimport\033[0m", "Import filesystem image into object store and write index file.");
 }

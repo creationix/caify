@@ -29,29 +29,31 @@ void hash_to_path(const char* objects_dir, uint8_t* hash, char* dir, char* path)
 }
 
 
-int caify_main(int argc, char** argv, caify_fn_t* action, const char* description) {
+int caify_main(int argc, char** argv, caify_fn_t* action, const char* name, const char* description) {
   FILE* output = NULL;
   FILE* input = NULL;
+  char input_path[PATH_MAX + 1];
+  char output_path[PATH_MAX + 1];
   char objects_dir[PATH_MAX + 1];
   objects_dir[0] = 0;
   int c;
   bool usage = false;
-  while ((c = getopt (argc, argv, "hvqs:i:o:")) != -1) {
+  while ((c = getopt (argc, argv, "hqvs:i:o:")) != -1) {
     switch (c) {
       case 'h':
         usage = true;
         return -1;
-      case 'q':
-        quiet = true;
-        break;
       case 'v':
         verbose = true;
+        break;
+      case 'q':
+        quiet = true;
         break;
       case 's':
         strncpy(objects_dir, optarg, PATH_MAX);
         break;
       case 'i':
-        if (!quiet) fprintf(stderr, "Input: '%s'\n", optarg);
+        snprintf(input_path, PATH_MAX, "'%s'", optarg);
         input = fopen(optarg, "r");
         if (!input) {
           fprintf(stderr, "%s: '%s'\n", strerror(errno), optarg);
@@ -59,7 +61,7 @@ int caify_main(int argc, char** argv, caify_fn_t* action, const char* descriptio
         }
         break;
       case 'o':
-        if (!quiet) fprintf(stderr, "Output: '%s'\n", optarg);
+        snprintf(output_path, PATH_MAX, "'%s'", optarg);
         output = fopen(optarg, "w");
         if (!output) {
           fprintf(stderr, "%s: '%s'\n", strerror(errno), optarg);
@@ -80,14 +82,14 @@ int caify_main(int argc, char** argv, caify_fn_t* action, const char* descriptio
         fprintf(stderr, "%s: '%s'\n", strerror(errno), argv[i]);
         return -1;
       }
-      if (!quiet) fprintf(stderr, "Input: '%s'\n", argv[i]);
+      snprintf(input_path, PATH_MAX, "'%s'", argv[i]);
     } else if (!output) {
       output = fopen(argv[i], "w");
       if (!output) {
         fprintf(stderr, "%s: '%s'\n", strerror(errno), argv[i]);
         return -1;
       }
-      if (!quiet) fprintf(stderr, "Output: '%s'\n", argv[i]);
+      snprintf(output_path, PATH_MAX, "'%s'", argv[i]);
     } else if (!*objects_dir) {
       strncpy(objects_dir, argv[i], PATH_MAX);
     } else {
@@ -101,7 +103,7 @@ int caify_main(int argc, char** argv, caify_fn_t* action, const char* descriptio
       usage = true;
       fprintf(stderr, "Refusing to read from stdin TTY\n");
     } else {
-      if (!quiet) fprintf(stderr, "Input: (stdin)\n");
+      snprintf(input_path, PATH_MAX, "(stdin)");
       input = stdin;
     }
   }
@@ -110,24 +112,34 @@ int caify_main(int argc, char** argv, caify_fn_t* action, const char* descriptio
       fprintf(stderr, "Refusing to write to stdout TTY\n");
       usage = true;
     } else {
-      if (!quiet) fprintf(stderr, "Output: (stdout)...\n");
+      snprintf(output_path, PATH_MAX, "(stdout)");
       output = stdout;
     }
   }
 
-  if (!quiet) {
-    fprintf(stderr, "Caify - %s\n", description);
-  }
-
   if (usage) {
-    fprintf(stderr, "Usage: %s\n  -s path/to/objects\n  -i input\n  -o output\n  -h\n  -q\n  -v\n", argv[0]);
+    fprintf(stderr, "Caify - %s\n", description);
+    fprintf(stderr, "Usage: %s\n  -s path/to/objects\n  -i input\n  -o output\n  -h\n  -v\n", argv[0]);
     return -1;
+  }
+  if (!quiet) {
+    char hostname[PATH_MAX + 1];
+    gethostname(hostname, PATH_MAX);
+    char message[PATH_MAX + 1];
+    if (*objects_dir) {
+      snprintf(message, PATH_MAX, "%s: Caify %s from \033[1;35m%s\033[0m to \033[1;36m%s\033[0m using '\033[1;33m%s\033[0m'.\n",
+        hostname, name, input_path, output_path, objects_dir);
+    } else {
+      snprintf(message, PATH_MAX, "%s: Caify %s from \033[1;35m%s\033[0m to \033[1;36m%s\033[0m.\n",
+        hostname, name, input_path, output_path);
+    }
+    fprintf(stderr, "%s", message);
   }
 
   if (!*objects_dir) {
     snprintf(objects_dir, PATH_MAX, "%s/.caify-objects", getenv("HOME"));
   }
-  if (!quiet) fprintf(stderr, "Objects: '%s'\n", objects_dir);
+  if (verbose) fprintf(stderr, "Objects: '%s'\n", objects_dir);
 
   int ret = action(input, output, objects_dir);
 

@@ -34,5 +34,6 @@ static int caify_want(FILE* input, FILE* output, const char* objects_dir) {
 }
 
 int main(int argc, char** argv) {
-  return caify_main(argc, argv, caify_want, "Scan index and emit hashes wanting from local object store.");
+  return caify_main(argc, argv, caify_want,
+    "\033[1;34mfilter\033[0m", "Filter index and emit hashes wanting from local object store.");
 }

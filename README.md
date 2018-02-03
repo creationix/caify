@@ -1,7 +1,7 @@
 # Commands
 
 There are 3 main commands in the Caify system, they are `caify-import`,
-`caify-export`, and `caify-want`.
+`caify-export`, and `caify-filter`.
 
 ## Import
 
@@ -27,16 +27,16 @@ filesystem image using the data in the local object store.
 caify-export < rootfs.idx > rootfs.img
 ```
 
-## Want
+## Filter
 
-Want is a helper that consumes an index file and emits a raw stream of hashes
-not found in the local object store.
+Filter is a helper that consumes an index file and emits a filtered index stream
+of hashes not found in the local object store.
 
-- Input: Raw hashes
+- Input: Filtered Index
 - Output: Raw blocks
 
 ```sh
-caify-want < rootfs.idx | hexdump -e '32/1 "%02x" 1/4 " %x" "\n"'
+caify-filter < rootfs.idx | hexdump -e '32/1 "%02x" 1/4 " %x" "\n"'
 ```
 
 # Use Cases
@@ -60,7 +60,7 @@ caify-import < rootfs.img > rootfs.idx
 # Upload the index file to the update server.
 scp rootfs.idx update.server:rootfs.idx
 # Sync up new objects to server's object store.
-ssh update.server 'caify-want -i rootfs.idx' \
+ssh update.server 'caify-filter -i rootfs.idx' \
  | caify-export \
  | ssh update.server 'caify-import' \
  | hexdump -e '32/1 "%02x" 1/4 " %x" "\n"'
@@ -77,7 +77,7 @@ To download a a new release on a device, do something like the following:
 # Download the index file for the new release.
 scp update.server:rootfs.idx rootfs.idx
 # Sync down new objects from server to local store.
-caify-want < rootfs.idx \
+caify-filter < rootfs.idx \
  | ssh update.server 'caify-export' \
  | caify-import \
  | hexdump -e '32/1 "%02x" 1/4 " %x" "\n"'

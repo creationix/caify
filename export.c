@@ -65,5 +65,6 @@ static int caify_export(FILE* input, FILE* output, const char* objects_dir) {
 }
 
 int main (int argc, char** argv) {
-  return caify_main(argc, argv, caify_export, "Export...");
+  return caify_main(argc, argv, caify_export,
+    "\033[1;31mexport\033[0m", "Export from object store to output file using input index.");
 }
