@@ -7,7 +7,10 @@
 
 #define CAIFY_HASH_SIZE 32
 #define CAIFY_CHUNK_SIZE 4096
-#define PATH_MAX 1024
+
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 
 bool quiet;
 bool verbose;
