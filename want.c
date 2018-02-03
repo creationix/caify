@@ -7,6 +7,7 @@
 static int caify_want(FILE* input, FILE* output, const char* objects_dir) {
   uint8_t hash[CAIFY_HASH_SIZE];
   uint32_t count;
+  uint32_t one = 1;
   while (true) {
     size_t n = fread(hash, 1, CAIFY_HASH_SIZE, input);
     if (!n && feof(input)) return 0;
@@ -25,6 +26,7 @@ static int caify_want(FILE* input, FILE* output, const char* objects_dir) {
 
     if (access(path, F_OK)) {
       fwrite(hash, CAIFY_HASH_SIZE, 1, output);
+      fwrite(&one, sizeof(one), 1, output);
     }
 
   }

@@ -1,13 +1,11 @@
-# CC=musl-gcc -Os -static -std=c99 -Werror \
-# 	-Wall -Wextra -pedantic -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition
-CC=gcc -g -std=gnu99 -Werror \
+CC=musl-gcc -Os -static -std=c99 -Werror \
 	-Wall -Wextra -pedantic -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition
+# CC=gcc -g -std=gnu99 -Werror \
+# 	-Wall -Wextra -pedantic -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition
 
 COMMANDS=\
   bin/import \
 	bin/export \
-	bin/upload \
-	bin/download \
 	bin/want
 
 all: $(COMMANDS)
@@ -45,14 +43,10 @@ bin/%: %.c shared.c shared.h BLAKE2/ref/blake2b-ref.c bin
 install: $(COMMANDS)
 	cp bin/import /usr/local/bin/caify-import
 	cp bin/export /usr/local/bin/caify-export
-	cp bin/want /usr/local/bin/caify-upload
-	cp bin/want /usr/local/bin/caify-download
 	cp bin/want /usr/local/bin/caify-want
 
 uninstall:
 	rm -f \
 		/usr/local/bin/caify-import \
 		/usr/local/bin/caify-export \
-		/usr/local/bin/caify-upload \
-		/usr/local/bin/caify-download \
 		/usr/local/bin/caify-want
