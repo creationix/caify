@@ -1,7 +1,6 @@
-CC=musl-gcc -Os -static -std=c99 -Werror \
+CC=musl-gcc -Os -static -std=c99
+CFLAGS= -Werror \
 	-Wall -Wextra -pedantic -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition
-# CC=gcc -g -std=gnu99 -Werror \
-# 	-Wall -Wextra -pedantic -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition
 
 COMMANDS=\
   bin/import \
@@ -10,7 +9,7 @@ COMMANDS=\
 
 all: $(COMMANDS)
 
-test-all: test.img bin/import bin/export bin/want
+test-all: test.img $(COMMANDS)
 	rm -rf test ; mkdir -p test
 	# Developer imports image into local store on dev machine.
 	bin/import test.img test/dev.idx test/dev.obj
@@ -59,11 +58,9 @@ clean:
 BLAKE2/ref/blake2b-ref.c:
 	git submodule update --init
 
-bin:
-	mkdir bin
-
-bin/%: %.c shared.c shared.h BLAKE2/ref/blake2b-ref.c bin
-	$(CC) $< shared.c -o $@
+bin/%: %.c shared.c shared.h BLAKE2/ref/blake2b-ref.c
+	mkdir -p bin
+	$(CC) $(CFLAGS) $< shared.c -o $@
 
 install: $(COMMANDS)
 	cp bin/import /usr/local/bin/caify-import
