@@ -123,7 +123,7 @@ int caify_export(FILE* input, FILE* output, const char* objects_dir) {
   uint8_t hash[CAIFY_HASH_SIZE];
   uint32_t count;
   while (true) {
-    int n = fread(hash, 1, CAIFY_HASH_SIZE, input);
+    size_t n = fread(hash, 1, CAIFY_HASH_SIZE, input);
     if (!n && feof(input)) return 0;
     if (n < CAIFY_HASH_SIZE) {
       fprintf(stderr, "Unexpected end of input stream\n");
