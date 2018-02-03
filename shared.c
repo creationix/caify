@@ -127,10 +127,10 @@ int caify_main(int argc, char** argv, caify_fn_t* action, const char* name, cons
     gethostname(hostname, PATH_MAX);
     char message[PATH_MAX + 1];
     if (*objects_dir) {
-      snprintf(message, PATH_MAX, "%s: Caify %s from \033[1;35m%s\033[0m to \033[1;36m%s\033[0m using '\033[1;33m%s\033[0m'.\n",
+      snprintf(message, PATH_MAX, "\033[0;37m%s\033[0m: Caify %s from \033[1;35m%s\033[0m to \033[1;36m%s\033[0m using '\033[1;33m%s\033[0m'.\n",
         hostname, name, input_path, output_path, objects_dir);
     } else {
-      snprintf(message, PATH_MAX, "%s: Caify %s from \033[1;35m%s\033[0m to \033[1;36m%s\033[0m.\n",
+      snprintf(message, PATH_MAX, "\033[0;37m%s\033[0m: Caify %s from \033[1;35m%s\033[0m to \033[1;36m%s\033[0m.\n",
         hostname, name, input_path, output_path);
     }
     fprintf(stderr, "%s", message);
