@@ -36,7 +36,7 @@ not found in the local object store.
 - Output: Raw blocks
 
 ```sh
-caify-want < rootfs.idx | hexdump -e '32/1 "%02x" "\n"'
+caify-want < rootfs.idx | hexdump -e '32/1 "%02x" 1/4 " %x" "\n"'
 ```
 
 # Use Cases
@@ -63,7 +63,7 @@ scp rootfs.idx update.server:rootfs.idx
 ssh update.server 'caify-want -i rootfs.idx' \
  | caify-export \
  | ssh update.server 'caify-import' \
- | hexdump -e '32/1 "%02x" "\n"'
+ | hexdump -e '32/1 "%02x" 1/4 " %x" "\n"'
 ```
 
 First we upload the index to the server.  Once there, we ask the server what
@@ -80,7 +80,7 @@ scp update.server:rootfs.idx rootfs.idx
 caify-want < rootfs.idx \
  | ssh update.server 'caify-export' \
  | caify-import \
- | hexdump -e '32/1 "%02x" "\n"'
+ | hexdump -e '32/1 "%02x" 1/4 " %x" "\n"'
 # Write the image to the partition
 caify-export < rootfs.idx > /dev/mmcblk0p2
 ```
