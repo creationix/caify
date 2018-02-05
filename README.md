@@ -104,4 +104,6 @@ curl https://update.server/rootfs.idx \
  | socat tcp:update.server:4000 - \
  | caify-import \
  | hexdump -e '32/1 "%02x" 1/4 " %x" "\n"'
+# Write the image to the partition
+caify-export < rootfs.idx > /dev/mmcblk0p2
 ```
