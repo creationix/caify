@@ -84,3 +84,24 @@ caify-filter < rootfs.idx \
 # Write the image to the partition
 caify-export < rootfs.idx > /dev/mmcblk0p2
 ```
+
+Or if you don't have ssh connectivity to the updates server, a socat based flow
+works too.
+
+On the server host the index files over https and spin up a tcp server for
+objects with `socat` and `caify-export`:
+
+```sh
+socat tcp-listen:4000,fork exec:caify-export
+```
+
+Then on the client, do something like:
+
+```sh
+curl https://update.server/rootfs.idx \
+ | tee rootfs.idx \
+ | caify-filter \
+ | socat tcp:update.server:4000 - \
+ | caify-import \
+ | hexdump -e '32/1 "%02x" 1/4 " %x" "\n"'
+```
